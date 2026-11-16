@@ -3,7 +3,7 @@ on:
   schedule:
     - cron: '30 19 * * 6'
     # One-time acceptance check; the UTC date guard prevents future repeats.
-    - cron: '37 5 16 11 *'
+    - cron: '23 7 * * *'
   workflow_dispatch:
 permissions:
   contents: write
@@ -21,7 +21,7 @@ jobs:
         env:
           RUN_CRON: ${{ github.event.schedule }}
         run: |
-          if [[ "$RUN_CRON" == '37 5 16 11 *' && "$(date -u +%F)" != '2026-11-16' ]]; then
+          if [[ "$RUN_CRON" == '23 7 * * *' && "$(date -u +%F)" != '2026-11-16' ]]; then
             echo collect=no >> "$GITHUB_OUTPUT"
           else
             echo collect=yes >> "$GITHUB_OUTPUT"
