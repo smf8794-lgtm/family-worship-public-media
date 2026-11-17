@@ -2,8 +2,6 @@ name: Collect public media
 on:
   schedule:
     - cron: '30 19 * * 6'
-    # One-time acceptance check; the UTC date guard prevents future repeats.
-    - cron: '23 7 * * *'
   workflow_dispatch:
 permissions:
   contents: write
@@ -16,34 +14,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - name: Check commissioning window
-        id: scheduled_window
-        env:
-          RUN_CRON: ${{ github.event.schedule }}
-        run: |
-          if [[ "$RUN_CRON" == '23 7 * * *' && "$(date -u +%F)" != '2026-11-16' ]]; then
-            echo collect=no >> "$GITHUB_OUTPUT"
-          else
-            echo collect=yes >> "$GITHUB_OUTPUT"
-          fi
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        if: steps.scheduled_window.outputs.collect == 'yes'
         with:
           persist-credentials: false
       - name: Read current state branch
-        if: steps.scheduled_window.outputs.collect == 'yes'
         run: |
           git fetch --depth=1 origin refs/heads/catalog-state
           git worktree add --detach "$RUNNER_TEMP/catalog" FETCH_HEAD
       - name: Verify and collect
-        if: steps.scheduled_window.outputs.collect == 'yes'
         run: |
           python3 collector/test.py
           python3 collector/build.py "$RUNNER_TEMP/catalog/archive.json" "$RUNNER_TEMP/catalog/archive.next"
           node verify-publication.mjs "$RUNNER_TEMP/catalog/archive.next"
           mv "$RUNNER_TEMP/catalog/archive.next" "$RUNNER_TEMP/catalog/archive.json"
       - name: Publish one JSON file by fast-forward
-        if: steps.scheduled_window.outputs.collect == 'yes'
         env:
           PUBLISH_TOKEN: ${{ github.token }}
         run: |
